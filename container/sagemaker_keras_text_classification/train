@@ -1,0 +1,196 @@
+#!/usr/bin/env python
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+#   Licensed under the Apache License, Version 2.0 (the "License").
+#   You may not use this file except in compliance with the License.
+#   A copy of the License is located at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   or in the "license" file accompanying this file. This file is distributed
+#   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+#   express or implied. See the License for the specific language governing
+#   permissions and limitations under the License.
+#
+#   A sample training component that trains a keras text classification
+#   model.
+
+
+from __future__ import print_function
+
+import os
+import json
+import pickle
+import sys
+import traceback
+
+from sklearn import tree
+from sklearn.cross_validation import train_test_split
+
+import pandas as pd
+import tensorflow as tf
+import re
+import numpy as np
+
+from tensorflow.python.estimator.export.export import build_raw_serving_input_receiver_fn
+from tensorflow.python.estimator.export.export_output import PredictOutput
+from tensorflow.python.keras.preprocessing.text import Tokenizer
+from tensorflow.python.keras.preprocessing.sequence import pad_sequences
+from tensorflow.python.keras.utils import to_categorical
+import re
+
+# These are the paths to where SageMaker mounts interesting things in your container.
+
+prefix = '/opt/ml/'
+
+input_path = prefix + 'input/data'
+output_path = os.path.join(prefix, 'output')
+model_path = os.path.join(prefix, 'model')
+param_path = os.path.join(prefix, 'input/config/hyperparameters.json')
+
+# This algorithm has a single channel of input data called 'training'. Since we run in
+# File mode, the input files are copied to the directory specified here.
+channel_name='training'
+training_path = os.path.join(input_path, channel_name)
+
+label_index = {'b':0,'t':1,'e':2,'m':3}
+MAX_WORDS = 10000 # only consider the top 10,000 words in the dataset
+WORD_INDEX = {}
+EMBEDDING_DIM = 100
+MAX_LEN = 100
+
+def get_label_id(category):
+  return label_index[category]
+
+def get_class_label(prediction):
+  for key, value in label_index.iteritems():
+    if value == prediction[0]:
+      return key
+
+def normalize_text(s):
+    s = s.lower()
+
+    # remove punctuation that is not word-internal (e.g., hyphens, apostrophes)
+    s = re.sub('\s\W',' ',s)
+    s = re.sub('\W\s',' ',s)
+
+    # make sure we didn't introduce any double spaces
+    s = re.sub('\s+',' ',s)
+
+    return s
+
+
+
+# The function to execute the training.
+def train():
+    print('Starting the training.')
+    try:
+        # Read in any hyperparameters that the user passed with the training job
+        with open(param_path, 'r') as tc:
+            trainingParams = json.load(tc)
+
+        column_names = ["TITLE", "URL", "PUBLISHER", "CATEGORY", "STORY", "HOSTNAME", "TIMESTAMP"]
+        news_dataset = pd.read_csv(os.path.join(training_path, 'newsCorpora.csv'), names=column_names, header=None, delimiter='\t')
+        news_dataset = news_dataset.dropna()
+        print(news_dataset.head())
+
+        #remove punctuations and double spaces
+        texts = [normalize_text(s) for s in news_dataset['TITLE']]
+        #convert category to a number
+        labels = [get_label_id(l) for l in news_dataset['CATEGORY']]
+
+        tokenizer = Tokenizer(num_words=MAX_WORDS)
+        tokenizer.fit_on_texts(texts) #texts contains the Title
+        sequences = tokenizer.texts_to_sequences(texts)
+        WORD_INDEX = tokenizer.word_index
+        data = pad_sequences(sequences, maxlen=MAX_LEN)
+        labels = to_categorical(np.asarray(labels))
+
+        print('Found %s unique tokens.' % len(WORD_INDEX))
+        print('Shape of data tensor:', data.shape)
+        print('Shape of label tensor:', labels.shape)
+
+        embeddings_index = {}
+        f = open(os.path.join(training_path, 'glove.6B.100d.txt'))
+        for line in f:
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype='float32')
+            embeddings_index[word] = coefs
+        f.close()
+
+        embedding_matrix = np.zeros((MAX_WORDS, EMBEDDING_DIM))
+
+        for word, i in WORD_INDEX.items():
+            embedding_vector = embeddings_index.get(word)
+            if i < MAX_WORDS:
+                if embedding_vector is not None:
+                    embedding_matrix[i] = embedding_vector
+
+        x_train, x_test, y_train, y_test = train_test_split(data, labels,
+                                                    test_size=0.2,
+                                                    random_state=99)
+        print("x_train shape: ", x_train.shape)
+
+        #now lets build our sequential model using keras
+
+        model = tf.keras.models.Sequential()
+        model.add(tf.keras.layers.Embedding(MAX_WORDS, EMBEDDING_DIM, input_length=MAX_LEN))
+
+        model.add(tf.keras.layers.Flatten())
+        model.add(tf.keras.layers.Dense(32, activation='relu'))
+        model.add(tf.keras.layers.Dense(32, activation='relu'))
+
+        ## for higher accuracy uncomment the lines below
+        #model.add(tf.keras.layers.Dropout(0.5))
+        #model.add(tf.keras.layers.LSTM(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
+        #model.add(tf.keras.layers.LSTM(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
+        #model.add(tf.keras.layers.LSTM(32))  # return a single vector of dimension 32
+        #model.add(tf.keras.layers.Dense(10, activation='softmax'))
+
+        model.add(tf.keras.layers.Dense(len(label_index), activation='softmax'))
+        model.summary()
+
+        model.layers[0].set_weights([embedding_matrix])
+        model.layers[0].trainable = False
+
+        #model.save_weights('pre_trained_glove_model.h5')
+
+        model.compile(optimizer='rmsprop',
+                      loss='categorical_crossentropy',
+                      metrics=['acc'])
+        history = model.fit(x_train, y_train,
+                            epochs=2,
+                            batch_size=32,
+                            validation_data=(x_test, y_test))
+
+
+        print('Training complete. Now saving model to: ', model_path)
+        model.save(os.path.join(model_path, 'news_breaker.h5'))
+
+        saved_model = tf.keras.models.load_model(os.path.join(model_path, 'news_breaker.h5'))
+        with open(os.path.join(model_path,'tokenizer.pickle'), 'wb') as handle:
+            pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        post = "Elon Musk Joins #DeleteFacebook With a Barrage of Tweets"
+        seq = tokenizer.texts_to_sequences([post])
+        d = pad_sequences(seq, maxlen=MAX_LEN)
+        prediction = saved_model.predict_classes(np.array(d))
+        print(get_class_label(prediction))
+
+    except Exception as e:
+        # Write out an error file. This will be returned as the failureReason in the
+        # DescribeTrainingJob result.
+        trc = traceback.format_exc()
+        with open(os.path.join(output_path, 'failure'), 'w') as s:
+            s.write('Exception during training: ' + str(e) + '\n' + trc)
+        # Printing this causes the exception to be in the training job logs, as well.
+        print('Exception during training: ' + str(e) + '\n' + trc, file=sys.stderr)
+        # A non-zero exit code causes the training job to be marked as Failed.
+        sys.exit(255)
+
+if __name__ == '__main__':
+    train()
+
+    # A zero exit code causes the job to be marked a Succeeded.
+    sys.exit(0)
