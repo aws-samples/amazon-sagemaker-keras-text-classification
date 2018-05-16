@@ -161,22 +161,25 @@ def train():
                       metrics=['acc'])
         history = model.fit(x_train, y_train,
                             epochs=2,
+                            verbose=2,
                             batch_size=32,
                             validation_data=(x_test, y_test))
 
 
+        # save the model and the tokenizer
         print('Training complete. Now saving model to: ', model_path)
         model.save(os.path.join(model_path, 'news_breaker.h5'))
-
         saved_model = tf.keras.models.load_model(os.path.join(model_path, 'news_breaker.h5'))
         with open(os.path.join(model_path,'tokenizer.pickle'), 'wb') as handle:
             pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-        post = "Elon Musk Joins #DeleteFacebook With a Barrage of Tweets"
+        # test with a sample headline
+        post = "What Improved Tech Means for Electric, Self-Driving and Flying Cars"
         seq = tokenizer.texts_to_sequences([post])
         d = pad_sequences(seq, maxlen=MAX_LEN)
         prediction = saved_model.predict_classes(np.array(d))
-        print(get_class_label(prediction))
+        print("Test headline: ", post)
+        print("Predicted category: " , get_class_label(prediction))
 
     except Exception as e:
         # Write out an error file. This will be returned as the failureReason in the
