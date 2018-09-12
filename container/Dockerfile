@@ -15,14 +15,8 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Here we get all python packages.
-# There's substantial overlap between scipy and numpy that we eliminate by
-# linking them together. Likewise, pip leaves the install caches populated which uses
-# a significant amount of space. These optimizations save a fair amount of space in the
-# image, which reduces start up time.
 RUN wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && \
-    pip install numpy scipy scikit-learn pandas flask gevent gunicorn tensorflow h5py && \
-        (cd /usr/local/lib/python2.7/dist-packages/scipy/.libs; rm *; ln ../../numpy/.libs/* .) && \
-        rm -rf /root/.cache
+    pip install numpy scipy scikit-learn pandas flask gevent gunicorn tensorflow h5py
 
 # Set some environment variables. PYTHONUNBUFFERED keeps Python from buffering our standard
 # output stream, which means that logs can be delivered to the user quickly. PYTHONDONTWRITEBYTECODE
