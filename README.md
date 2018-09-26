@@ -1,12 +1,14 @@
-# AIM410 Workshop Lab Guide: Build, Train and Deploy ML Models using Amazon SageMaker
+# AIM410: Build, Train and Deploy ML Models using Amazon SageMaker
+
+## Workshop Lab Guide
 
 Amazon SageMaker has built-in algorithms that let you quickly get started on extracting value out of your data. However, for customers using frameworks that are not natively supported by Amazon SageMaker or those that want to use custom training/inference code, it also offers the capability to package, train and serve the custom models using Docker images.
 
-In this workshop, you will work on this advanced use-case of using your own models (utilizing Docker images) and learn how you can take any dataset, train a custom model using Keras (with a TensorFlow backend) and then deploy the model using Amazon SageMaker.
+In this workshop, you will work on this advanced use-case of using your own models (utilizing Docker images) and learn how you can take any dataset, build and train a custom model using Keras/TensorFlow and then deploy the model using Amazon SageMaker.
 
-## LAB1: Dataset Exploration
+The model we will develop will classify news articles into the appropriate news category. To train our model, we will be using the [UCI News Dataset](https://archive.ics.uci.edu/ml/datasets/News+Aggregator) which contains a list of about 420K articles and their appropriate categories (labels). There are four categories: Business (b), Science & Technology (t), Entertainment (e) and Health & Medicine (m).
 
-The model we will develop will classify news articles into the appropriate news category. To train our model, we will be using the UCI News Dataset which contains a list of about 420K articles and their appropriate categories (label). There are four categories: Business (b), Science & Technology (t), Entertainment (e) and Health & Medicine (m).
+### LAB1: Dataset Exploration
 
 Before we dive into the mechanics of our deep learning model, let’s explore the dataset and see what information we can use to predict the category. For this, we will use a notebook within Amazon SageMaker that we will can also utilize later on as our development machine.
 
@@ -27,6 +29,138 @@ Click ‘Create role’ to create a new role and then hit ‘Create notebook ins
 From the Amazon SageMaker console, click on the name of the notebook instance you just created:
 
 ![SageMaker console instance list](/images/sm-keras-2.png)
+
+From the notebook instance details page, click on the new role that you just created.
+
+![SageMaker console instance details](/images/sm-keras-3.png)
+
+This will open up a new tab showing the IAM role details. Here click on ‘Attach policies’ and then search for ‘AmazonEC2ContainerRegistryPowerUser’ policy, select it and then click on ‘Attach policy’.
+
+![SageMaker IAM Role Policy](/images/sm-keras-4.png)
+
+3\.	From the Amazon SageMaker console, click ‘Open’ to navigate into the Jupyter notebook. Under ‘New’, select ‘Terminal’. This will open up a terminal session to your notebook instance. The companion code to this blogpost is on GitHub so let’s go ahead and clone that:
+
+```
+git clone https://github.com/aws-samples/amazon-sagemaker-keras-text-classification.git ./SageMaker/sagemaker-keras-text-classification
+```
+4\.	Switch into the ‘data’ directory
+
+```
+cd SageMaker/amazon-sagemaker-keras-text-classification/data
+```
+
+5\. Download and unzip the dataset
+
+```
+wget https://archive.ics.uci.edu/ml/machine-learning-databases/00359/NewsAggregatorDataset.zip && unzip NewsAggregatorDataset.zip
+```
+
+6\. Now lets also download and unzip the pre-trained glove embedding files (more on this in a bit):
+
+```
+wget http://nlp.stanford.edu/data/glove.6B.zip && unzip glove.6B.zip
+```
+
+7\. Remove the unnecessary files
+
+```
+rm 2pageSessions.csv glove.6B.200d.txt glove.6B.50d.txt glove.6B.300d.txt glove.6B.zip readme.txt NewsAggregatorDataset.zip && rm -rf __MACOSX/
+```
+
+At this point, you should only see two files: ‘glove.6B.100d.txt’ (word embeddings) and ‘newsCorpora.csv’ (dataset) in the this data directory.
+
+8\.	Close the terminal window and go back to the Jupyter notebook web UI. Click on the folder called ‘sagemaker_keras_text_classification’ and launch the notebook within it with the same name. Make sure the kernel you are running is ‘conda_tensforflow_p27’.
+
+![SageMaker notebook kernel](/images/sm-keras-5.png)
+
+If it’s not, you can switch it from ‘Kernel -> Change kernel’ menu:
+
+![SageMaker notebook change kernel](/images/sm-keras-6.png)
+
+
+9\.	Once you individually run the cells within this notebook (shift+enter) through ‘Step 1: Data Exploration’, you should see some sample data (Note: do not run all cells within the notebook – the example is designed to be followed one cell at a time):
+
+![SageMaker notebook data exploration](/images/sm-keras-7.png)
+
+Here we first import the necessary libraries and tools such as TensorFlow, pandas and numpy. An open-source high performance data analysis library, pandas is an essential tool used in almost every Python-based data science experiment. NumPy is another Python library that provides data structures to hold multi-dimensional array data and provides many utility functions to transform that data. TensorFlow is a widely used deep learning framework that also includes the higher-level deep learning Python library called Keras. We will be using Keras to build and iterate our text classification model.
+
+Next we define the list of columns contained in this dataset (the format is usually described as part of the dataset as it is here). Finally, we use the ‘read_csv()’ method of the pandas library to read the dataset into memory and look at the first few lines using the ‘head()’ method.
+
+**Remember, our goal is to accurately predict the category of any news article. So, ‘Category’ is our label or target column. For this example, we will only use the information contained in the ‘Title’ to predict the category.**
+
+### LAB 2: Local Testing of Training & Inference Code
+
+Once we are finished developing the training portion (in ‘container/train’), we can start testing locally so we can debug our code quickly. Local test scripts are found in the ‘container/local_test’ subfolder. Here we can run ‘local_train.sh’ which will, in turn, run a Docker container within which our training code will execute.
+
+#### Testing Training Code
+
+1\.	The local testing framework expects the training data to be in the ‘/container/local_test/test_dir/input/data/training’ folder so let’s copy over the contents of our ‘data’ folder there.
+
+In the notebook instance terminal window, switch over to the ‘sagemaker-keras-text-classification/data’ directory and then run:
+
+```
+cp -a . ../container/local_test/test_dir/input/data/training/
+```
+
+2\. Switch into the ‘local_test’ directory
+
+```
+cd ../container/local_test
+```
+
+3\. Run the following command to build the container and run the training.
+
+```
+docker build -t sagemaker-keras-text-class:latest .. && ./train_local.sh sagemaker-keras-text-class:latest
+```
+
+With an 80/20 split between the training and validation and a simple Feed Forward Neural Network, we get around 85% validation accuracy after two epochs – not a bad start!
+
+![local training results](/images/sm-keras-8.png)
+
+We now have a saved model called ‘news_breaker.h5’ and the ‘tokenizer.pickle’ file within ‘sagemaker-keras-text-classification/container/local_test /test_dir/model’ – the local directory that we mapped to the ‘/opt/ml’ directory within the container.
+
+#### Testing Inference Code
+
+It is also advisable to locally test and debug the interference Flask app so we don’t waste time debugging it when we deploy it to Amazon SageMaker.
+
+4\.	Start local testing by switching into the ‘local_test’ directory and running ‘serve_local.sh’:
+
+```
+./serve_local.sh sagemaker-keras-text-class:latest
+```
+
+This is a simple script that uses the ‘Docker run’ command to start the container and the Flask app that we defined previously in the `serve` file.
+
+5\. Now open another terminal, move to the `local_test` directory and run ‘predict.sh’. This script issues a request to the flask app using the test news headline in `input.json`:
+
+```
+cd SageMaker/amazon-sagemaker-keras-text-classification/container/local_test && ./predict.sh input.json application/json
+```
+
+Great! Our model inference implementation responds and is correctly able to categorize this headline as a Health & Medicine story.
+
+### Lab 3: Training & Deployment on Amazon SageMaker
+
+Now that we are done testing locally, we are ready to package up our code and submit to Amazon SageMaker for training or deployment (hosting) or both.
+
+1\.	We should probably modify our training code to take advantage of the more powerful hardware. Let’s update the number of epochs in the ‘train’ script to 25 to see how that impacts the validation accuracy of our model while training on Amazon SageMaker.
+
+```python
+history = model.fit(x_train, y_train,
+                            epochs=25,
+                            batch_size=32,
+                            validation_data=(x_test, y_test))
+
+```
+
+2\. Open the ‘sagemaker_keras_text_classification.ipynb’ notebook and follow the steps listed in **Part 2** to upload the data to S3, submit the training job and, finally, deploy the model for inference. The notebook contains explanations for each step and also shows how to test your inference endpoint.
+
+## Citations
+
+Dataset: Dua, D. and Karra Taniskidou, E. (2017). UCI Machine Learning Repository [http://archive.ics.uci.edu/ml]. Irvine, CA: University of California, School of Information and Computer Science.
+
+Glove Embeddings: Jeffrey Pennington, Richard Socher, and Christopher D. Manning. 2014. [GloVe: Global Vectors for Word Representation.](https://nlp.stanford.edu/pubs/glove.pdf) [[pdf](https://nlp.stanford.edu/pubs/glove.pdf)] [[bib](https://nlp.stanford.edu/pubs/glove.bib)]
 
 
 
