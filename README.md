@@ -2,9 +2,9 @@
 
 ## Workshop Lab Guide
 
-Amazon SageMaker has built-in algorithms that let you quickly get started on extracting value out of your data. However, for customers using frameworks that are not natively supported by Amazon SageMaker or those that want to use custom training/inference code, it also offers the capability to package, train and serve the custom models using Docker images.
+Amazon SageMaker has built-in algorithms that let you quickly get started on extracting value out of your data. However, for customers using frameworks or libraries not natively supported by Amazon SageMaker or customers that want to use custom training/inference code, it also offers the capability to package, train and serve the models using custom Docker images.
 
-In this workshop, you will work on this advanced use-case of using your own models (utilizing Docker images) and learn how you can take any dataset, build and train a custom model using Keras/TensorFlow and then deploy the model using Amazon SageMaker.
+In this workshop, you will work on this advanced use-case of building, training and deploying ML models using custom built TensorFlow Docker containers.
 
 The model we will develop will classify news articles into the appropriate news category. To train our model, we will be using the [UCI News Dataset](https://archive.ics.uci.edu/ml/datasets/News+Aggregator) which contains a list of about 420K articles and their appropriate categories (labels). There are four categories: Business (b), Science & Technology (t), Entertainment (e) and Health & Medicine (m).
 
@@ -88,7 +88,61 @@ Next we define the list of columns contained in this dataset (the format is usua
 
 **Remember, our goal is to accurately predict the category of any news article. So, ‘Category’ is our label or target column. For this example, we will only use the information contained in the ‘Title’ to predict the category.**
 
-### LAB 2: Local Testing of Training & Inference Code
+### LAB 2: Building the SageMaker TensorFlow Container
+
+Since we are going to be using a custom built container for this workshop, we will need to create it. The Amazon SageMaker notebook instance already comes loaded with Docker. The SageMaker team has also created the [`sagemaker-tensorflow-container`](https://github.com/aws/sagemaker-tensorflow-container) project that makes it super easy for us to build custom TensorFlow containers that are optimized to run on Amazon SageMaker. Similar containers are also available for other widely used ML/DL frameworks as well.
+
+We will first create a `base` TensorFlow container and then add our custom code to create a `final` container. We will use this `final` container for local testing. Once satisfied with local testing, we will push it up to Amazon Container Registery (ECR) where it can pulled from by Amazon SageMaker for training and deployment.
+
+1\. Let's start by creating the base TensorFlow container. Go to the notebook instance terminal window and clone the `sagemaker-tensorflow-container` repo:
+
+```
+git clone https://github.com/aws/sagemaker-tensorflow-container.git
+```
+
+2\. We will be using TensorFlow 1.8.0 so lets switch to the appropriate directory
+
+```
+cd sagemaker-tensorflow-container/docker/1.8.0/base
+```
+
+3\. If you list the directory contents here, you will notice that there are two Dockerfiles - one made for CPU based nodes and another for GPU based. Since, we will be using CPU machines, lets build the CPU docker image
+
+```
+docker build -t tensorflow-base:1.8.0-cpu-py2 -f Dockerfile.cpu .
+```
+
+Building the docker images should not take more than 2 minutes. Once finished, you can list the images by running `docker images`. You should see the new base image named `tensorflow-base:1.8.0-cpu-py2`.
+
+4\. Next we create our `final` images by including our code onto the `base` container. In the terminal window, switch to the container directory
+
+```
+cd ~/SageMaker/sagemaker-keras-text-classification/container/
+```
+
+5\. Create a new Dockerfile using `vim Dockerfile` and then paste the content below
+
+```
+# Build an image that can do training and inference in SageMaker
+
+FROM tensorflow-base:1.8.0-cpu-py2
+
+ENV PATH="/opt/program:${PATH}"
+
+# Set up the program in the image
+COPY sagemaker_keras_text_classification /opt/program
+WORKDIR /opt/program
+```
+
+We start from the `base` image, add the code directory to our path, copy the code into that directory and finally set the WORKDIR to the same path so any subsequent RUN/ENTRYPOINT commands run by Amazon SageMaker will use this directory.
+
+6\. Build the `final` image
+
+```
+docker build -t sagemaker-keras-text-class:latest .
+```
+
+### LAB 3: Local Testing of Training & Inference Code
 
 Once we are finished developing the training portion (in ‘container/train’), we can start testing locally so we can debug our code quickly. Local test scripts are found in the ‘container/local_test’ subfolder. Here we can run ‘local_train.sh’ which will, in turn, run a Docker container within which our training code will execute.
 
@@ -108,10 +162,10 @@ cp -a . ../container/local_test/test_dir/input/data/training/
 cd ../container/local_test
 ```
 
-3\. Run the following command to build the container and run the training.
+3\. Run the following command to run the training locally.
 
 ```
-docker build -t sagemaker-keras-text-class:latest .. && ./train_local.sh sagemaker-keras-text-class:latest
+./train_local.sh sagemaker-keras-text-class:latest
 ```
 
 With an 80/20 split between the training and validation and a simple Feed Forward Neural Network, we get around 85% validation accuracy after two epochs – not a bad start!
@@ -140,7 +194,7 @@ cd SageMaker/amazon-sagemaker-keras-text-classification/container/local_test && 
 
 Great! Our model inference implementation responds and is correctly able to categorize this headline as a Health & Medicine story.
 
-### Lab 3: Training & Deployment on Amazon SageMaker
+### Lab 4: Training & Deployment on Amazon SageMaker
 
 Now that we are done testing locally, we are ready to package up our code and submit to Amazon SageMaker for training or deployment (hosting) or both.
 
