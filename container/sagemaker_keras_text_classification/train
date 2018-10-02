@@ -25,7 +25,7 @@ import sys
 import traceback
 
 from sklearn import tree
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 
 import pandas as pd
 import tensorflow as tf
@@ -137,16 +137,20 @@ def train():
         model = tf.keras.models.Sequential()
         model.add(tf.keras.layers.Embedding(MAX_WORDS, EMBEDDING_DIM, input_length=MAX_LEN))
 
+        # IMPORTANT: Only one of the architectures below should be uncommented
+
+        # ------Architecture: MLP------------------------------
         model.add(tf.keras.layers.Flatten())
         model.add(tf.keras.layers.Dense(32, activation='relu'))
         model.add(tf.keras.layers.Dense(32, activation='relu'))
+        #------------------------------------------------------
 
-        ## for higher accuracy uncomment the lines below
-        #model.add(tf.keras.layers.Dropout(0.5))
-        #model.add(tf.keras.layers.LSTM(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
-        #model.add(tf.keras.layers.LSTM(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
-        #model.add(tf.keras.layers.LSTM(32))  # return a single vector of dimension 32
-        #model.add(tf.keras.layers.Dense(10, activation='softmax'))
+        #-------Architecture: RNN w/Dropout suitable for GPUs--
+        # model.add(tf.keras.layers.Dropout(0.5))
+        # model.add(tf.keras.layers.LSTM(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
+        # model.add(tf.keras.layers.LSTM(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
+        # model.add(tf.keras.layers.LSTM(32))  # return a single vector of dimension 32
+        #------------------------------------------------------
 
         model.add(tf.keras.layers.Dense(len(label_index), activation='softmax'))
         model.summary()
