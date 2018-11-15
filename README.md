@@ -38,30 +38,34 @@ This will open up a new tab showing the IAM role details. Here click on ‘Attac
 
 ![SageMaker IAM Role Policy](/images/sm-keras-4.png)
 
-3\.	From the Amazon SageMaker console, click ‘Open’ to navigate into the Jupyter notebook. Under ‘New’, select ‘Terminal’. This will open up a terminal session to your notebook instance. The companion code to this blogpost is on GitHub so let’s go ahead and clone that:
+3\.	From the Amazon SageMaker console, click ‘Open’ to navigate into the Jupyter notebook. Under ‘New’, select ‘Terminal’. This will open up a terminal session to your notebook instance.
+
+![SageMaker Notebook Terminal](/images/sm-keras-0.png)
+
+4\. The companion code to this blogpost is on GitHub so let’s go ahead and clone that:
 
 ```
 git clone https://github.com/aws-samples/amazon-sagemaker-keras-text-classification.git ./SageMaker/sagemaker-keras-text-classification
 ```
-4\.	Switch into the ‘data’ directory
+5\.	Switch into the ‘data’ directory
 
 ```
 cd SageMaker/amazon-sagemaker-keras-text-classification/data
 ```
 
-5\. Download and unzip the dataset
+6\. Download and unzip the dataset
 
 ```
 wget https://archive.ics.uci.edu/ml/machine-learning-databases/00359/NewsAggregatorDataset.zip && unzip NewsAggregatorDataset.zip
 ```
 
-6\. Now lets also download and unzip the pre-trained glove embedding files (more on this in a bit):
+7\. Now lets also download and unzip the pre-trained glove embedding files (more on this in a bit):
 
 ```
 wget http://nlp.stanford.edu/data/glove.6B.zip && unzip glove.6B.zip
 ```
 
-7\. Remove the unnecessary files
+8\. Remove the unnecessary files
 
 ```
 rm 2pageSessions.csv glove.6B.200d.txt glove.6B.50d.txt glove.6B.300d.txt glove.6B.zip readme.txt NewsAggregatorDataset.zip && rm -rf __MACOSX/
@@ -69,7 +73,7 @@ rm 2pageSessions.csv glove.6B.200d.txt glove.6B.50d.txt glove.6B.300d.txt glove.
 
 At this point, you should only see two files: ‘glove.6B.100d.txt’ (word embeddings) and ‘newsCorpora.csv’ (dataset) in the this data directory.
 
-8\.	Close the terminal window and go back to the Jupyter notebook web UI. Click on the folder called ‘sagemaker_keras_text_classification’ and launch the notebook within it with the same name. Make sure the kernel you are running is ‘conda_tensforflow_p27’.
+9\.	Close the terminal window and go back to the Jupyter notebook web UI. Click on the folder called ‘sagemaker_keras_text_classification’ and launch the notebook within it with the same name. Make sure the kernel you are running is ‘conda_tensforflow_p27’.
 
 ![SageMaker notebook kernel](/images/sm-keras-5.png)
 
@@ -78,7 +82,7 @@ If it’s not, you can switch it from ‘Kernel -> Change kernel’ menu:
 ![SageMaker notebook change kernel](/images/sm-keras-6.png)
 
 
-9\.	Once you individually run the cells within this notebook (shift+enter) through ‘Step 1: Data Exploration’, you should see some sample data (Note: do not run all cells within the notebook – the example is designed to be followed one cell at a time):
+10\.	Once you individually run the cells within this notebook (shift+enter) through ‘Step 1: Data Exploration’, you should see some sample data (Note: do not run all cells within the notebook – the example is designed to be followed one cell at a time):
 
 ![SageMaker notebook data exploration](/images/sm-keras-7.png)
 
@@ -94,7 +98,11 @@ Since we are going to be using a custom built container for this workshop, we wi
 
 We will first create a `base` TensorFlow container and then add our custom code to create a `final` container. We will use this `final` container for local testing. Once satisfied with local testing, we will push it up to Amazon Container Registery (ECR) where it can pulled from by Amazon SageMaker for training and deployment.
 
-1\. Let's start by creating the base TensorFlow container. Go to the notebook instance terminal window and clone the `sagemaker-tensorflow-container` repo:
+1\. Let's start by creating the base TensorFlow container. Go to the notebook instance terminal window, switch to the home directory and clone the `sagemaker-tensorflow-container` repo:
+
+```
+cd ~
+```
 
 ```
 git clone https://github.com/aws/sagemaker-tensorflow-container.git
@@ -150,7 +158,13 @@ Once we are finished developing the training portion (in ‘container/train’),
 
 1\.	The local testing framework expects the training data to be in the ‘/container/local_test/test_dir/input/data/training’ folder so let’s copy over the contents of our ‘data’ folder there.
 
-In the notebook instance terminal window, switch over to the ‘sagemaker-keras-text-classification/data’ directory and then run:
+In the notebook instance terminal window, switch over to the ‘sagemaker-keras-text-classification/data’ directory
+
+```
+cd ~/SageMaker/sagemaker-keras-text-classification/data
+```
+
+ and then run:
 
 ```
 cp -a . ../container/local_test/test_dir/input/data/training/
@@ -189,7 +203,7 @@ This is a simple script that uses the ‘Docker run’ command to start the cont
 5\. Now open another terminal, move to the `local_test` directory and run ‘predict.sh’. This script issues a request to the flask app using the test news headline in `input.json`:
 
 ```
-cd SageMaker/amazon-sagemaker-keras-text-classification/container/local_test && ./predict.sh input.json application/json
+cd SageMaker/sagemaker-keras-text-classification/container/local_test && ./predict.sh input.json application/json
 ```
 
 Great! Our model inference implementation responds and is correctly able to categorize this headline as a Health & Medicine story.
