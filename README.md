@@ -50,7 +50,7 @@ git clone https://github.com/aws-samples/amazon-sagemaker-keras-text-classificat
 5\.	Switch into the ‘data’ directory
 
 ```
-cd SageMaker/amazon-sagemaker-keras-text-classification/data
+cd SageMaker/sagemaker-keras-text-classification/data
 ```
 
 6\. Download and unzip the dataset
@@ -192,7 +192,7 @@ We now have a saved model called ‘news_breaker.h5’ and the ‘tokenizer.pick
 
 It is also advisable to locally test and debug the interference Flask app so we don’t waste time debugging it when we deploy it to Amazon SageMaker.
 
-4\.	Start local testing by switching into the ‘local_test’ directory and running ‘serve_local.sh’:
+4\.	Start local testing by running ‘serve_local.sh’ in the ‘local_test’ directory (we should be in it already after completing previous step):
 
 ```
 ./serve_local.sh sagemaker-keras-text-class:latest
@@ -212,7 +212,11 @@ Great! Our model inference implementation responds and is correctly able to cate
 
 Now that we are done testing locally, we are ready to package up our code and submit to Amazon SageMaker for training or deployment (hosting) or both.
 
-1\.	We should probably modify our training code to take advantage of the more powerful hardware. Let’s update the number of epochs in the ‘train’ script to 25 to see how that impacts the validation accuracy of our model while training on Amazon SageMaker.
+1\.	We should probably modify our training code to take advantage of the more powerful hardware. Let’s update the number of epochs in the ‘train’ script to 25 to see how that impacts the validation accuracy of our model while training on Amazon SageMaker. This file is located in 'sagemaker_keras_text_classification' directory. Navigate there by 
+```
+cd ../sagemaker_keras_text_classification/
+```
+and edit the file named 'train'
 
 ```python
 history = model.fit(x_train, y_train,
