@@ -34,9 +34,11 @@ From the notebook instance details page, click on the new role that you just cre
 
 ![SageMaker console instance details](/images/sm-keras-3.png)
 
-This will open up a new tab showing the IAM role details. Here click on ‘Attach policies’ and then search for ‘AmazonEC2ContainerRegistryPowerUser’ policy, select it and then click on ‘Attach policy’.
+This will open up a new tab showing the IAM role details. Here click on ‘Attach policies’ and then search for ‘AmazonEC2ContainerRegistryFullAccess’ policy, select it and then click on ‘Attach policy’.
 
 ![SageMaker IAM Role Policy](/images/sm-keras-4.png)
+
+*Please make sure to check the checkbox next to the policy before hitting `Attach policy`*
 
 3\.	From the Amazon SageMaker console, click ‘Open’ to navigate into the Jupyter notebook. Under ‘New’, select ‘Terminal’. This will open up a terminal session to your notebook instance.
 
@@ -120,7 +122,7 @@ cd sagemaker-tensorflow-container/docker/1.8.0/base
 docker build -t tensorflow-base:1.8.0-cpu-py2 -f Dockerfile.cpu .
 ```
 
-Building the docker images should not take more than 2 minutes. Once finished, you can list the images by running `docker images`. You should see the new base image named `tensorflow-base:1.8.0-cpu-py2`.
+Building the docker images should not take more than 5-7 minutes. Once finished, you can list the images by running `docker images`. You should see the new base image named `tensorflow-base:1.8.0-cpu-py2`.
 
 4\. Next we create our `final` images by including our code onto the `base` container. In the terminal window, switch to the container directory
 
@@ -128,7 +130,7 @@ Building the docker images should not take more than 2 minutes. Once finished, y
 cd ~/SageMaker/sagemaker-keras-text-classification/container/
 ```
 
-5\. Create a new Dockerfile using `vim Dockerfile` and then paste the content below
+5\. Create a new Dockerfile using `vim Dockerfile`, hit `i` to insert and then paste the content below
 
 ```
 # Build an image that can do training and inference in SageMaker
@@ -141,6 +143,7 @@ ENV PATH="/opt/program:${PATH}"
 COPY sagemaker_keras_text_classification /opt/program
 WORKDIR /opt/program
 ```
+Hit Escape and then `:wq` to save and exit vim.
 
 We start from the `base` image, add the code directory to our path, copy the code into that directory and finally set the WORKDIR to the same path so any subsequent RUN/ENTRYPOINT commands run by Amazon SageMaker will use this directory.
 
@@ -182,6 +185,8 @@ cd ../container/local_test
 ./train_local.sh sagemaker-keras-text-class:latest
 ```
 
+*Note:* it might take anywhere from 2-3 minutes to complete for the local training to complete.
+
 With an 80/20 split between the training and validation and a simple Feed Forward Neural Network, we get around 85% validation accuracy after two epochs – not a bad start!
 
 ![local training results](/images/sm-keras-8.png)
@@ -200,7 +205,7 @@ It is also advisable to locally test and debug the interference Flask app so we 
 
 This is a simple script that uses the ‘Docker run’ command to start the container and the Flask app that we defined previously in the `serve` file.
 
-5\. Now open another terminal, move to the `local_test` directory and run ‘predict.sh’. This script issues a request to the flask app using the test news headline in `input.json`:
+5\. Now **open another terminal**, move to the `local_test` directory and run ‘predict.sh’. This script issues a request to the flask app using the test news headline in `input.json`:
 
 ```
 cd SageMaker/sagemaker-keras-text-classification/container/local_test && ./predict.sh input.json application/json
@@ -212,7 +217,7 @@ Great! Our model inference implementation responds and is correctly able to cate
 
 Now that we are done testing locally, we are ready to package up our code and submit to Amazon SageMaker for training or deployment (hosting) or both.
 
-1\.	We should probably modify our training code to take advantage of the more powerful hardware. Let’s update the number of epochs in the ‘train’ script to 25 to see how that impacts the validation accuracy of our model while training on Amazon SageMaker. This file is located in 'sagemaker_keras_text_classification' directory. Navigate there by 
+1\.	We should probably modify our training code to take advantage of the more powerful hardware. Let’s update the number of epochs in the ‘train’ script to `10` to see how that impacts the validation accuracy of our model while training on Amazon SageMaker. This file is located in 'sagemaker_keras_text_classification' directory. Navigate there by
 ```
 cd ../sagemaker_keras_text_classification/
 ```
@@ -220,7 +225,7 @@ and edit the file named 'train'
 
 ```python
 history = model.fit(x_train, y_train,
-                            epochs=25,
+                            epochs=10,
                             batch_size=32,
                             validation_data=(x_test, y_test))
 
