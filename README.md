@@ -255,7 +255,7 @@ train(script="train_mnist_hvd.py",
         docker_image=docker_container_image,
         training_data_path={'train': train_input, 'test': test_input},
         source_dir=source_dir,
-        train_instance_count=8,
+        train_instance_count=2,
         base_job_name="tf-hvdwdwdw-cpu",
         hyperparameters={"sagemaker_mpi_enabled": "True"})
 ```
