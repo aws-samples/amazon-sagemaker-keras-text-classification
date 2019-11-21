@@ -19,12 +19,16 @@ from __future__ import print_function
 import os
 import json
 import pickle
-import StringIO
 import sys
 import signal
 import traceback
 import json
 import flask
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 import tensorflow as tf
 import pandas as pd
@@ -40,7 +44,7 @@ with open(os.path.join(model_path,'tokenizer.pickle'), 'rb') as handle:
     tokenizer = pickle.load(handle)
 
 def get_class_label(prediction):
-  for key, value in label_index.iteritems():
+  for key, value in label_index.items():
     if value == prediction[0]:
       return key
 
@@ -50,25 +54,27 @@ def get_class_label(prediction):
 class ScoringService(object):
     model = None                # Where we keep the model when it's loaded
 
-    @classmethod
-    def get_model(cls):
-        """Get the model object for this instance, loading it if it's not already loaded."""
-        if cls.model == None:
-            #with open(os.path.join(model_path, 'decision-tree-model.pkl'), 'r') as inp:
-            cls.model = tf.keras.models.load_model(os.path.join(model_path, 'news_breaker.h5'))
-            cls.model._make_predict_function()
-        return cls.model
 
-    @classmethod
-    def predict(cls, input):
+    def get_model(self):
+        """Get the model object for this instance, loading it if it's not already loaded."""
+
+        #with open(os.path.join(model_path, 'decision-tree-model.pkl'), 'r') as inp:
+        model = tf.keras.models.load_model(os.path.join(model_path, 'news_breaker.h5'))
+        model._make_predict_function()
+        graph = tf.get_default_graph()
+        return model, graph
+
+
+    def predict(self, input):
         """For the input, do the predictions and return them.
 
         Args:
             input (a single news headline): The data on which to do the predictions. """
-        clf = cls.get_model()
+        clf, graph = self.get_model()
         seq = tokenizer.texts_to_sequences([input])
         d = pad_sequences(seq, maxlen=MAX_LEN)
-        prediction = clf.predict_classes(np.array(d))
+        with graph.as_default():
+            prediction = clf.predict_classes(np.array(d))
         return(get_class_label(prediction))
 
 # The flask app for serving predictions
@@ -78,7 +84,7 @@ app = flask.Flask(__name__)
 def ping():
     """Determine if the container is working and healthy. In this sample container, we declare
     it healthy if we can load the model successfully."""
-    health = ScoringService.get_model() is not None  # You can insert a health check here
+    health = ScoringService().get_model() is not None  # You can insert a health check here
 
     status = 200 if health else 404
     return flask.Response(response='\n', status=status, mimetype='application/json')
@@ -98,6 +104,6 @@ def transformation():
     #
     # # Do the prediction
     prediction = {
-        "result": ScoringService.predict(input)
+        "result": ScoringService().predict(input)
     }
     return flask.Response(response=json.dumps(prediction), status=200, mimetype='application/json')
