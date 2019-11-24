@@ -134,10 +134,15 @@ Hit Escape and then `:wq` to save and exit vim.
 We start from the `base` image, add the code directory to our path, copy the code into that directory and finally set the WORKDIR to the same path so any subsequent RUN/ENTRYPOINT commands run by Amazon SageMaker will use this directory.
 
 3\. Build the custom image
-run the docker login command emitted from the command below to log in
-```aws ecr get-login --no-include-email --region us-east-1 --registry-ids 763104351884```
 
-run following
+Run the docker login command emitted from the command below to log in
+
+```
+aws ecr get-login --no-include-email --region us-east-1 --registry-ids 763104351884
+```
+
+and then run following command
+
 ```
 docker build -t sagemaker-keras-text-class:latest .
 ```
