@@ -20,7 +20,7 @@ For the IAM role, select ‘Create a new role’ and select the options shown be
 
 ![Amazon SageMaker IAM Role](/images/sm-keras-1.png)
 
-Click ‘Create role’ to create a new role. In the ‘Git repositories’ section select the option to clone a public Git repository and use this URL: https://github.com/danilop/amazon-sagemaker-keras-text-classification
+Click ‘Create role’ to create a new role. In the ‘Git repositories’ section select the option to clone a public Git repository and use this URL: https://github.com/aws-samples/amazon-sagemaker-keras-text-classification
 
 ![Amazon SageMaker Git Repo](/images/sm-keras-git.png)
 
