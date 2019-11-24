@@ -138,7 +138,7 @@ We start from the `base` image, add the code directory to our path, copy the cod
 Run the docker login command emitted from the command below to log in
 
 ```
-aws ecr get-login --no-include-email --region us-east-1 --registry-ids 763104351884
+aws ecr get-login --no-include-email --region <replace with AWS REGION such as us-east-1 or us-west-2> --registry-ids 763104351884
 ```
 
 and then run following command
