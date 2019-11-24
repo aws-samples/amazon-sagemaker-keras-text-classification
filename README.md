@@ -74,7 +74,7 @@ rm 2pageSessions.csv glove.6B.200d.txt glove.6B.50d.txt glove.6B.300d.txt glove.
 
 At this point, you should only see two files: ‘glove.6B.100d.txt’ (word embeddings) and ‘newsCorpora.csv’ (dataset) in the this data directory.
 
-8\. Go back to the Jupyter notebook web UI. You shoul dbe in the folder called ‘sagemaker_keras_text_classification’. Please launch the notebook within it with the same name. Make sure the kernel you are running is ‘conda_tensorflow_p36’.
+8\. Go back to the Jupyter notebook web UI. You should be in the folder called ‘sagemaker_keras_text_classification’. Please launch the notebook within it with the same name. Make sure the kernel you are running is ‘conda_tensorflow_p36’.
 
 ![SageMaker notebook kernel](/images/sagemaker-notebook-kernel.png)
 
@@ -134,14 +134,17 @@ Hit Escape and then `:wq` to save and exit vim.
 We start from the `base` image, add the code directory to our path, copy the code into that directory and finally set the WORKDIR to the same path so any subsequent RUN/ENTRYPOINT commands run by Amazon SageMaker will use this directory.
 
 3\. Build the custom image
+run the docker login command emitted from the command below to log in
+```aws ecr get-login --no-include-email --region us-east-1 --registry-ids 763104351884```
 
+run following
 ```
 docker build -t sagemaker-keras-text-class:latest .
 ```
 
 ### LAB 3: Local Testing of Training & Inference Code
 
-Once we are finished developing the training portion (in ‘container/train’), we can start testing locally so we can debug our code quickly. Local test scripts are found in the ‘container/local_test’ subfolder. Here we can run ‘local_train.sh’ which will, in turn, run a Docker container within which our training code will execute.
+Once we are finished developing the training portion (in ‘container/train’), we can start testing locally so we can debug our code quickly. Local test scripts are found in the ‘container/local_test’ subfolder. Here we can run ‘train_local.sh’ which will, in turn, run a Docker container within which our training code will execute.
 
 #### Testing Training Code
 
