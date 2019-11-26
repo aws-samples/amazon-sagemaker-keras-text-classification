@@ -261,7 +261,7 @@ This lab will demonstrate both SageMaker Horovod framework as well as SageMaker'
 
 Amazon SageMaker has built-in training algorithms that provide the ability to do distributed training among multiple compute nodes via 'train_instance_count' parameter. Up until now, if one were to bring his/her own algorithm, they would have to take care of providing their own distributed compute framework and encapsulating it in a container. Horovod has previously been enabled on Amazon Deep Learning AMIs
 (https://aws.amazon.com/blogs/machine-learning/aws-deep-learning-amis-now-include-horovod-for-faster-multi-gpu-tensorflow-training-on-amazon-ec2-p3-instances/).
-With the introduction of the new feature described in this lab, Horovod distributed framework is available as part of SageMaker BringYourOwnContainer flow. Customers will soon also be able to run fully-managed Horovod jobs for high scale distributed training.
+With the introduction of the new feature described in this lab, Horovod distributed framework is available as part of SageMaker Deep Learning Containers. Customers can run fully-managed Horovod jobs for high scale distributed training.
 
 What is Horovod? It is a framework allowing a user to distribute a deep learning workload among multiple compute nodes and take advantage of inherent parallelism of deep learning training process. It is available for both CPU and GPU AWS compute instances. Horovod follows the Message Passing Interface (MPI) model. This is a popular standard for passing messages and managing communication between nodes in a high-performance distributed computing environment. Horovod’s MPI implementation provides a more simplified programming model compared to the parameter server based distributed training model. This model enables developers to easily scale their existing single CPU/GPU training programs with minimal code changes.
 
@@ -270,7 +270,7 @@ For this lab, we will be instantiating CPU compute nodes for simplicity and scal
 #### B. SageMaker's Script Mode.
 Previously (as in Lab 2-4 of this workshop), in BringYourOwnContainer situation, a user had to make his/her training Python script a part of the container. Therefore, during the debug process, every Python script change required rebuilding the container. SageMaker's "script mode" allows one to build the container once and then debug and change a python script  without rebuilding the container with every change. Instead, a user specifies script's "entry point" via 'train(script="myscript.py",....) parameter, for example:
 ```
-train(script="train_mnist_hvd.py",
+train(script="myscript_train_hvd.py",
         instance_type="ml.c4.xlarge",
         sagemaker_local_session=sage_session,
         docker_image=docker_container_image,
@@ -281,21 +281,7 @@ train(script="train_mnist_hvd.py",
         hyperparameters={"sagemaker_mpi_enabled": "True"})
 ```
 #### Lab Instructions:
-1\.	From the Amazon SageMaker console, click ‘Open’ to navigate into the Jupyter notebook. Under ‘New’, select ‘Terminal’. This will open up a terminal session to your notebook instance.
-
-![SageMaker Notebook Terminal](/images/sm-keras-0.png)
-
-
-2\. Switch to the `~/SageMaker` directory and clone the distributed training code
-```
-cd ~/SageMaker
-```
-```
-git clone https://github.com/aws-samples/SageMaker-Horovod-Distributed-Training
-```
-
-
-3\. Open the ‘Tensorflow Distributed Training - Horovod-BYOC.ipynb’ notebook located in SageMaker-Horovod-Distributed-Training directory and follow its flow. This will unpack the container with keras-mnist dataset and execute a distributed training on 8 CPU nodes.
+1.\ Open the ‘sentiment-analysis.ipynb’ notebook located in "horovod distributed training" directory and follow its flow. 
 
 
 ## Citations
