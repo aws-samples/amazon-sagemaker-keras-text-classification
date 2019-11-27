@@ -138,7 +138,7 @@ We start from the `base` image, add the code directory to our path, copy the cod
 Run the docker login command emitted from the command below to log in
 
 ```
-aws ecr get-login --no-include-email --region <replace with AWS REGION such as us-east-1 or us-west-2> --registry-ids 763104351884
+(aws ecr get-login --no-include-email --region <AWS REGION such as us-east-1> --registry-ids 763104351884)
 ```
 
 and then run following command
@@ -281,7 +281,7 @@ train(script="myscript_train_hvd.py",
         hyperparameters={"sagemaker_mpi_enabled": "True"})
 ```
 #### Lab Instructions:
-1.\ Open the ‘sentiment-analysis.ipynb’ notebook located in "horovod distributed training" directory and follow its flow. 
+1. Open the ‘sentiment-analysis.ipynb’ notebook located in "horovod distributed training" directory and follow its flow. 
 
 
 ## Citations
