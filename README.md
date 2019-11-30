@@ -1,5 +1,11 @@
 # AIM427-Take an ML from idea to production using Amazon SageMaker
 
+## Use following login to sign in into an AWS Account. Use the hash provided as the login credential. 
+
+```
+https://dashboard.eventengine.run/login
+```
+
 ## Workshop Lab Guide
 
 Amazon SageMaker has built-in algorithms that let you quickly get started on extracting value out of your data. However, for customers using frameworks or libraries not natively supported by Amazon SageMaker or customers that want to use custom training/inference code, it also offers the capability to package, train and serve the models using custom Docker images.
