@@ -1,6 +1,6 @@
 # AIM427-Take an ML from idea to production using Amazon SageMaker
 
-## Use following login to sign in into an AWS Account. Use the hash provided as the login credential. 
+#### Use following url to sign in into an AWS Account. Use the hash provided as the login credential. 
 
 ```
 https://dashboard.eventengine.run/login
