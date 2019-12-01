@@ -141,13 +141,15 @@ We start from the `base` image, add the code directory to our path, copy the cod
 
 3\. Build the custom image
 
-Run the docker login command emitted from the command below to log in
+#### Note: Slow down and read the below instruction very carefully. The next command(aws ecr get-login...) is a two step process. First, run the below command(aws ecr get-login...); Second, copy output of command(aws ecr get-login...) and run it as a command. 
+
+Run the docker login command and then copy and run the output of below command to log in
 
 ```
-(aws ecr get-login --no-include-email --region <AWS REGION such as us-east-1> --registry-ids 763104351884)
+aws ecr get-login --no-include-email --region <AWS REGION such as us-east-1> --registry-ids 763104351884
 ```
 
-and then run following command
+Next, run following command
 
 ```
 docker build -t sagemaker-keras-text-class:latest .
