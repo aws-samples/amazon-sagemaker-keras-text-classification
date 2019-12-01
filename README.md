@@ -260,34 +260,42 @@ history = model.fit(x_train, y_train,
 
 2\. Open the ‘sagemaker_keras_text_classification.ipynb’ notebook and follow the steps listed in **Lab 4** to upload the data to S3, submit the training job and, finally, deploy the model for inference. The notebook contains explanations for each step and also shows how to test your inference endpoint.
 
-### Lab 5: Distributed Training in Script Mode with Horovod Distributed Training Framework.
-This lab will demonstrate both SageMaker Horovod framework as well as SageMaker's Script mode.
+### Lab 5: Distributed Training in Script Mode with Parameter Server Training Framework.
+This lab will demonstrate both SageMaker Parameter Server framework as well as SageMaker's Script mode.
 
-#### A. SageMaker's Horovod Distribugted Training Framework
+#### A. SageMaker's Parameter Server Distributed Training Framework
 
-Amazon SageMaker has built-in training algorithms that provide the ability to do distributed training among multiple compute nodes via 'train_instance_count' parameter. Up until now, if one were to bring his/her own algorithm, they would have to take care of providing their own distributed compute framework and encapsulating it in a container. Horovod has previously been enabled on Amazon Deep Learning AMIs
-(https://aws.amazon.com/blogs/machine-learning/aws-deep-learning-amis-now-include-horovod-for-faster-multi-gpu-tensorflow-training-on-amazon-ec2-p3-instances/).
-With the introduction of the new feature described in this lab, Horovod distributed framework is available as part of SageMaker Deep Learning Containers. Customers can run fully-managed Horovod jobs for high scale distributed training.
-
-What is Horovod? It is a framework allowing a user to distribute a deep learning workload among multiple compute nodes and take advantage of inherent parallelism of deep learning training process. It is available for both CPU and GPU AWS compute instances. Horovod follows the Message Passing Interface (MPI) model. This is a popular standard for passing messages and managing communication between nodes in a high-performance distributed computing environment. Horovod’s MPI implementation provides a more simplified programming model compared to the parameter server based distributed training model. This model enables developers to easily scale their existing single CPU/GPU training programs with minimal code changes.
+A common pattern in distributed training is to use dedicated processes to collect gradients computed by “worker” processes, then aggregate them and distribute the updated gradients back to the workers. These processes are known as parameter servers. In general, they can be run either on their own machines or co-located on the same machines as the workers. In a parameter server cluster, each parameter server communicates with all workers (“all-to-all”). The Amazon SageMaker prebuilt TensorFlow container comes with a built-in option to use parameter servers for distributed training. The container runs a parameter server thread in each training instance, so there is a 1:1 ratio of parameter servers to workers. With this built-in option, gradient updates are made asynchronously (though some other versions of parameters servers use synchronous updates).
 
 For this lab, we will be instantiating CPU compute nodes for simplicity and scalability.
 
 #### B. SageMaker's Script Mode.
-Previously (as in Lab 2-4 of this workshop), in BringYourOwnContainer situation, a user had to make his/her training Python script a part of the container. Therefore, during the debug process, every Python script change required rebuilding the container. SageMaker's "script mode" allows one to build the container once and then debug and change a python script  without rebuilding the container with every change. Instead, a user specifies script's "entry point" via 'train(script="myscript.py",....) parameter, for example:
+
+Previously (as in Lab 2-4 of this workshop), in BringYourOwnContainer situation, a user had to make his/her training Python script a part of the container. Therefore, during the debug process, every Python script change required rebuilding the container. SageMaker's "script mode" allows one to build the container once and then debug and change a python script  without rebuilding the container with every change. Instead, a user specifies script's "entry point" via entry_point='myscript.py' and script_mode=True parameter.
+
+Script Mode requires a training script, which in this case is the sentiment.py file in the /distributed training subdirectory of the related distributed training example GitHub repository. Once a training script is ready, the next step is to set up an Amazon SageMaker TensorFlow Estimator object with the details of the training job. It is very similar to an Estimator for training on a single machine, except we specify a distributions parameter to enable starting a parameter server on each training instance. 
+
 ```
-train(script="myscript_train_hvd.py",
-        instance_type="ml.c4.xlarge",
-        sagemaker_local_session=sage_session,
-        docker_image=docker_container_image,
-        training_data_path={'train': train_input, 'test': test_input},
-        source_dir=source_dir,
-        train_instance_count=2,
-        base_job_name="tf-hvdwdwdw-cpu",
-        hyperparameters={"sagemaker_mpi_enabled": "True"})
+distributions = {'parameter_server': {'enabled': True}}
+
+hyperparameters = {'epochs': 10, 'batch_size': 128}
+
+estimator = TensorFlow(
+                       source_dir='tf-sentiment-script-mode',
+                       entry_point='sentiment.py',
+                       model_dir=model_dir,
+                       train_instance_type=train_instance_type,
+                       train_instance_count=instance_count,
+                       hyperparameters=hyperparameters,
+                       role=sagemaker.get_execution_role(),
+                       base_job_name='tf-keras-sentiment',
+                       framework_version='1.13',
+                       py_version='py3',
+                       distributions = distributions,
+                       script_mode=True)
 ```
 #### Lab Instructions:
-1. Open the ‘sentiment-analysis.ipynb’ notebook located in "horovod distributed training" directory and follow its flow. 
+1. Open the ‘sentiment-analysis.ipynb’ notebook located in "distributed training" directory and follow the flow. 
 
 
 ## Citations
