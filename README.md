@@ -72,6 +72,10 @@ wget https://archive.ics.uci.edu/ml/machine-learning-databases/00359/NewsAggrega
 wget http://nlp.stanford.edu/data/glove.6B.zip && unzip glove.6B.zip
 ```
 
+Note: in case the above links don't work, please download and unzip the following file in the same directory:
+
+https://danilop.s3-eu-west-1.amazonaws.com/reInvent-Workshop-Data-Backup.zip
+
 7\. Remove the unnecessary files
 
 ```
