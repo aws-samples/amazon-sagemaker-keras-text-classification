@@ -231,7 +231,7 @@ Create a new container image with a name that reflects your changes:
 docker build -t sagemaker-keras-text-class-2units-2layers:latest .
 ```
 
-Test again your training locally, in the notbeook instance, to see if your validation accouracy improved:
+Test again your training locally, in the notebook instance, to see if your validation accouracy improved:
 
 ```
 cd ../container/local_test
