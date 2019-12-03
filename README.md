@@ -198,17 +198,22 @@ cd ../container/local_test
 
 With an 80/20 split between the training and validation and a simple Feed Forward Neural Network, we get around 78-80% validation accuracy (val_acc) after two epochs – not a bad start!
 
-Try reaching 84-85% validation accouracy before going to the next step. You can test different network architectures (using different hyperparameters) by editing `~/SageMaker/amazon-sagemaker-keras-text-classification/container/train` and create more docker containers (each with a unique name) that you can train local (you don't need to edit the Dockerfile). For example:
+Try reaching 84-85% validation accouracy before going to the next step. You can test different network architectures (using different hyperparameters) by editing `~/SageMaker/amazon-sagemaker-keras-text-classification/container/train` and create more docker containers (each with a unique name) that you can train local (you don't need to edit the Dockerfile).
+
+Go back in the `container` directory:
 
 ```
 cd ~/SageMaker/amazon-sagemaker-keras-text-classification/container/
-vim ./sagemaker_keras_text_classification/train
-docker build -t sagemaker-keras-text-class-2units-2layers:latest .
-cd ../container/local_test
-./train_local.sh sagemaker-keras-text-class-2units-2layers:latest
 ```
 
-When running training locally multiple times, you should confirm when asked to remove some write-protected regular files. Those files are the model output of the previous training (the ‘news_breaker.h5’ and the ‘tokenizer.pickle’ files).
+Edit the `train` file to update your network architecture:
+
+```
+vim ./sagemaker_keras_text_classification/train
+```
+
+If the network architecture is too "small", then it may be incapable of "learn" from the traning data and accourancy cannot increase beyond a certain point. That is a case of underfitting.
+If the network architecture is too "complex", it can learn to fit to the training data so very well, but then the model is not capable of working on new data points, so the validation accourancy is much lower than the training accourancy.
 
 Here's the part of the `train` file where you can change the network architecture to have more units or add new layers:
 
@@ -220,10 +225,22 @@ model.add(tf.keras.layers.Dense(2, activation='relu')) # Try 2-32 units (dimensi
 #------------------------------------------------------
 ```
 
-*Note:* for each test it might take anywhere from 2-3 minutes to complete for the local training to complete, we recommend you do 2-3 tests and them move forward with the best result you got.
+Create a new container image with a name that reflects your changes:
 
-If the network architecture is too "small", then it may be incapable of "learn" from the traning data and accourancy cannot increase beyond a certain point. That is a case of underfitting.
-If the network architecture is too "complex", it can learn to fit to the training data so very well, but then the model is not capable of working on new data points, so the validation accourancy is much lower than the training accourancy.
+```
+docker build -t sagemaker-keras-text-class-2units-2layers:latest .
+```
+
+Test again your training locally, in the notbeook instance, to see if your validation accouracy improved:
+
+```
+cd ../container/local_test
+./train_local.sh sagemaker-keras-text-class-2units-2layers:latest
+```
+
+When running training locally multiple times, you should confirm when asked to remove some write-protected regular files. Those files are the model output of the previous training (the ‘news_breaker.h5’ and the ‘tokenizer.pickle’ files).
+
+*Note:* for each test it might take anywhere from 2-3 minutes to complete for the local training to complete, we recommend you do 2-3 tests and them move forward with the best result you got.
 
 We now have a saved model called ‘news_breaker.h5’ and the ‘tokenizer.pickle’ file within ‘sagemaker-keras-text-classification/container/local_test /test_dir/model’ – the local directory that we mapped to the ‘/opt/ml’ directory within the container.
 
