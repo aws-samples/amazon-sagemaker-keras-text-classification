@@ -281,6 +281,7 @@ and edit the file named 'train'
 ```python
 history = model.fit(x_train, y_train,
                             epochs=10,
+                            verbose=2,
                             batch_size=32,
                             validation_data=(x_test, y_test))
 
