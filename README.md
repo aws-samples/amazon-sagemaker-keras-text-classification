@@ -108,7 +108,7 @@ Since we are going to be using a custom built container for this workshop, we wi
 
 Instead of building a TensorFlow container from scratch, we are going to use the AWS Deep Learning (DL) Containers. AWS DL Containers are Docker images pre-installed with deep learning frameworks to make it easy to deploy custom machine learning (ML) environments quickly.
 
-AWS DL Containers support TensorFlow, PyTorch, and Apache MXNet. We are going to use TensorFlow today. You can deploy AWS DL Containers on Amazon Sagemaker, Amazon Elastic Kubernetes Service (Amazon EKS), self-managed Kubernetes on Amazon EC2, Amazon Elastic Container Service (Amazon ECS). We are going to deploy using SageMaker for training and inference. The containers are available through Amazon Elastic Container Registry (Amazon ECR) and AWS Marketplace at no cost, you pay only for the resources that you use. In this workshop, we a re going to download the AWS DL Containers images via ECR.
+AWS DL Containers support TensorFlow, PyTorch, and Apache MXNet. We are going to use TensorFlow today. You can deploy AWS DL Containers on Amazon Sagemaker, Amazon Elastic Kubernetes Service (Amazon EKS), self-managed Kubernetes on Amazon EC2, Amazon Elastic Container Service (Amazon ECS). We are going to deploy using SageMaker for training and inference. The containers are available through Amazon Elastic Container Registry (Amazon ECR) and AWS Marketplace at no cost, you pay only for the resources that you use. In this workshop, we are going to download the AWS DL Containers images via ECR.
 
 For your reference, all available AWS DL Containers images are described in the documentation:
 
@@ -145,19 +145,16 @@ We start from the `base` image, add the code directory to our path, copy the cod
 
 3\. Build the custom image
 
-#### Note: Slow down and read the below instruction very carefully. The next command(aws ecr get-login...) is a two step process. First, run the below command(aws ecr get-login...); Second, copy output of command(aws ecr get-login...) and run it as a command. 
+
+First we will extract the [ec2 instance's region from metadata](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html) and then use `aws ecr` to get a docker login, allowing us to push into the ECR registry.
 
 Run the following docker login command
 
 Step 1: 
 ```
-aws ecr get-login --no-include-email --region <AWS REGION such as us-east-1> --registry-ids 763104351884
+export REGION=`curl --silent http://169.254.169.254/latest/dynamic/instance-identit/document | jq .region`
+$(aws ecr get-login --no-include-email --region ${REGION} --registry-ids 763104351884)
 ```
-Step 2: 
-```
-<copy and run the output emitted by above command without any changes>
-```
-
 Next, run following command
 
 ```
